@@ -42,24 +42,17 @@ Minimum platforms are iOS 26 and macOS 26, matching the app it was built for.
 
 ## Use
 
-**There is no tagged release yet.** The manifest in this repository points at
-`Artifacts/`, which `build.sh` fills and git ignores, so the package is
-consumed by path for now:
-
-```sh
-git clone https://github.com/leros1337/neechan-ffmpeg.git
-cd neechan-ffmpeg && ./build.sh        # about forty minutes on an M-series Mac
+```swift
+.package(url: "https://github.com/leros1337/neechan-ffmpeg.git", from: "9.0.2")
 ```
+
+The manifest names the xcframework zips attached to that release, with their
+checksums, so nothing is built on the consumer's side. To build it yourself
+instead, clone, run `./build.sh` (about forty minutes on an M-series Mac) and
+point the five binary targets back at `Artifacts/`:
 
 ```swift
 .package(path: "../neechan-ffmpeg")
-```
-
-Once a release is tagged the manifest will carry the zips' URLs and checksums
-and the usual form works:
-
-```swift
-.package(url: "https://github.com/leros1337/neechan-ffmpeg.git", from: "9.0.2")
 ```
 
 Either way, depend on the one product:
@@ -119,10 +112,11 @@ the zips it will find on the release. The order is therefore:
 4. `gh release create 9.0.2 Artifacts/*.xcframework.zip` with the zips whose
    checksums the manifest names.
 
-The workflow in `.github/workflows/release.yml` builds every slice on a tag push
-and uploads the result as a workflow artifact, which is the check that the build
-is reproducible on a clean machine. It does not create the release itself: a
-zip built elsewhere has a different checksum from the one the manifest names.
+The workflow in `.github/workflows/release.yml` is run by hand and builds every
+slice on a clean runner, uploading the result as a workflow artifact: the check
+that the build reproduces. It does not create the release itself, since a zip
+built elsewhere has a different checksum from the one the manifest names, and it
+does not run on a tag push, so cutting a release costs no runner time.
 
 ## Licensing
 

@@ -10,8 +10,9 @@ import PackageDescription
 // VideoToolbox for the WebM-to-MP4 conversion Photos insists on. No GPL
 // components, no networking, no filters, no external libraries but zlib.
 //
-// The xcframeworks are produced by `./build.sh` from FFmpeg's own sources.
-// See README.md for the exact configure line and how to rebuild them.
+// The xcframeworks are produced by `./build.sh` from FFmpeg's own sources and
+// attached to the release this manifest names. See README.md for the exact
+// configure line, how to rebuild them, and how a release is cut.
 let package = Package(
     name: "neechan-ffmpeg",
     platforms: [.iOS(.v26), .macOS(.v26)],
@@ -50,10 +51,30 @@ let package = Package(
                 .linkedLibrary("z")
             ]
         ),
-        .binaryTarget(name: "Libavcodec", path: "Artifacts/Libavcodec.xcframework"),
-        .binaryTarget(name: "Libavformat", path: "Artifacts/Libavformat.xcframework"),
-        .binaryTarget(name: "Libavutil", path: "Artifacts/Libavutil.xcframework"),
-        .binaryTarget(name: "Libswresample", path: "Artifacts/Libswresample.xcframework"),
-        .binaryTarget(name: "Libswscale", path: "Artifacts/Libswscale.xcframework")
+        .binaryTarget(
+            name: "Libavcodec",
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/Libavcodec.xcframework.zip",
+            checksum: "816d57893e68a584ebd480b6b278c1d0775b1911308547dfea80522f145218e7"
+        ),
+        .binaryTarget(
+            name: "Libavformat",
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/Libavformat.xcframework.zip",
+            checksum: "1c8431299c0c940004fe21a15465fd8399b4e26edd041208af6b500d7bdde396"
+        ),
+        .binaryTarget(
+            name: "Libavutil",
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/Libavutil.xcframework.zip",
+            checksum: "de20412f31b418cb6dd6684c26bdfaaa2ca2bc6b5c10edd0de0239e16883120e"
+        ),
+        .binaryTarget(
+            name: "Libswresample",
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/Libswresample.xcframework.zip",
+            checksum: "246bc732043f728c0ef3d9a9826e48b93f61a6aebb1fb51bcc3ba5bd2ca088d0"
+        ),
+        .binaryTarget(
+            name: "Libswscale",
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/Libswscale.xcframework.zip",
+            checksum: "ed138d2421073ddf96ed1e274352f61988f9d28fa816586c3a9691a07a27abd4"
+        )
     ]
 )
