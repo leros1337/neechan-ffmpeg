@@ -1,0 +1,41 @@
+name: Build
+
+# Run by hand, or by pushing a version tag. Proves the build reproduces on a
+# clean machine and keeps the result as a workflow artifact. It does not
+# publish the release: the manifest at the tag names the checksums of zips
+# built locally, and a zip built here is not byte-for-byte the same. See
+# "Releasing" in README.md.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    # FFmpeg is built five times over, once per slice.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install the x86 assembler
+        run: brew install nasm
+
+      - name: Build every slice
+        run: ./build.sh
+
+      - name: Zip and checksum
+        id: package
+        run: |
+          TAG="${GITHUB_REF_NAME:-$(date +%Y.%m.%d)}"
+          ./build.sh --release "$TAG" | tee checksums.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xcframeworks
+          path: |
+            Artifacts/*.xcframework.zip
+            checksums.txt

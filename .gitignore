@@ -1,0 +1,13 @@
+# The FFmpeg checkout and every intermediate object.
+build/
+
+# The xcframeworks themselves: built by ./build.sh, attached to a release
+# rather than committed. A gigabyte of binaries does not belong in git, which
+# is half the reason this package exists.
+Artifacts/
+*.xcframework
+*.xcframework.zip
+
+.DS_Store
+.build/
+.swiftpm/
