@@ -1,7 +1,7 @@
 # neechan-ffmpeg
 
 A trimmed build of [FFmpeg](https://ffmpeg.org) **n9.0.2** for Apple platforms,
-packaged as xcframeworks behind a Swift package. Built for
+packaged as static-library xcframeworks behind a Swift package. Built for
 [Neechan](https://github.com/leros1337/neechan), and useful to anything else
 that needs to decode WebM on iOS without carrying a general-purpose media stack.
 
@@ -43,7 +43,7 @@ Minimum platforms are iOS 26 and macOS 26, matching the app it was built for.
 ## Use
 
 ```swift
-.package(url: "https://github.com/leros1337/neechan-ffmpeg.git", from: "9.0.2")
+.package(url: "https://github.com/leros1337/neechan-ffmpeg.git", from: "9.0.3")
 ```
 
 The manifest names the xcframework zips attached to that release, with their
@@ -69,10 +69,18 @@ import Libavcodec
 import Libavformat
 ```
 
-The headers sit flat inside each framework, which is what lets FFmpeg's own
-`#include "libavutil/frame.h"` resolve: it is read as a framework include and
-finds `Libavutil.framework/Headers/frame.h`. That match depends on the
-filesystem ignoring the capital, which is the default on macOS.
+Each xcframework holds a static library, `libavutil.a`, and its headers in
+`Headers/libavutil/`, the directory FFmpeg installs them to, so FFmpeg's own
+`#include "libavutil/frame.h"` resolves as written. The module map sits in that
+same directory rather than at the top of `Headers/`: Xcode copies every library
+xcframework's headers into one shared `include/`, where five top-level module
+maps would collide, and clang finds one a directory down.
+
+They are libraries and not frameworks because Xcode embeds a framework from a
+binary target in the app even when it is static. It strips the archive out and
+links an empty stub dylib in its place, and App Store validation then reports
+each stub as a framework with no dSYM. A library is linked and nothing is
+embedded. `build.sh` fails if any slice comes out as a framework.
 
 ## Rebuilding
 
@@ -80,7 +88,7 @@ filesystem ignoring the capital, which is the default on macOS.
 ./build.sh                  # every slice, into Artifacts/
 ./build.sh --slices ios     # one platform: ios, isimulator, macos
 ./build.sh --clean          # from a fresh FFmpeg checkout
-./build.sh --release 9.0.2  # also zip each xcframework and print its checksum
+./build.sh --release 9.0.3  # also zip each xcframework and print its checksum
 ```
 
 Needs Xcode and, for the x86\_64 slices, `nasm` (`brew install nasm`). Without
@@ -99,17 +107,18 @@ this build contains.
 ### Releasing
 
 Versions follow FFmpeg's: `9.0.2` is FFmpeg n9.0.2, and a rebuild of the same
-FFmpeg with a changed configuration bumps the last number. Swift Package Manager
+FFmpeg with a changed configuration or packaging bumps the last number. `9.0.3`
+is n9.0.2 again, repackaged as static libraries. Swift Package Manager
 reads the manifest at the tag, so the tag has to point at a manifest that names
 the zips it will find on the release. The order is therefore:
 
-1. `./build.sh --release 9.0.2` here, which zips each xcframework into
+1. `./build.sh --release <version>` here, which zips each xcframework into
    `Artifacts/` and prints its checksum.
 2. Replace the `path:` binary targets in `Package.swift` with `url:` and
    `checksum:` entries pointing at
-   `https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.2/<Name>.xcframework.zip`.
-3. Commit, tag `9.0.2`, push the tag.
-4. `gh release create 9.0.2 Artifacts/*.xcframework.zip` with the zips whose
+   `https://github.com/leros1337/neechan-ffmpeg/releases/download/<version>/<Name>.xcframework.zip`.
+3. Commit, tag `<version>`, push the tag.
+4. `gh release create <version> Artifacts/*.xcframework.zip` with the zips whose
    checksums the manifest names.
 
 The workflow in `.github/workflows/release.yml` is run by hand and builds every

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Builds a trimmed, LGPL FFmpeg for Apple platforms and lays it out as
-# xcframeworks a Swift package can carry.
+# static-library xcframeworks a Swift package can carry.
 #
 # Trimmed means: only the containers and codecs the app actually meets, the
 # VideoToolbox hardware paths, and nothing else. No GPL components, no network
@@ -12,7 +12,7 @@
 # Usage:
 #   ./build.sh                 build every slice into Artifacts/
 #   ./build.sh --slices ios    build one platform (ios, isimulator, macos)
-#   ./build.sh --release 9.0.2 also zip each xcframework and print its checksum
+#   ./build.sh --release 9.0.3 also zip each xcframework and print its checksum
 #   ./build.sh --clean         start from a fresh checkout
 set -euo pipefail
 
@@ -186,63 +186,46 @@ build_slice() {
     )
 }
 
-# --- frameworks ------------------------------------------------------------
+# --- libraries -------------------------------------------------------------
 
-# A framework whose headers sit flat, the way the xcframeworks this replaces
-# laid them out. FFmpeg's headers include each other as "libavutil/frame.h",
-# which resolves as a framework include to Libavutil.framework/Headers/frame.h
-# because the filesystem does not mind the capital. That is what makes the flat
-# layout work, and why the framework names keep their capital Lib.
-make_framework() {
+# One slice of a static-library xcframework: the archive, and the headers in a
+# directory of their own named the way FFmpeg installs them, so its includes of
+# each other ("libavutil/frame.h") resolve exactly as written.
+#
+# A library and not a framework, because Xcode embeds a framework from a binary
+# target in the app even when it is static: it strips the archive out and links
+# an empty stub dylib in its place, which App Store validation then reports as
+# a framework with no dSYM. A library is linked and nothing is embedded.
+#
+# The module map sits beside the headers rather than at the top of Headers/:
+# Xcode copies every library xcframework's headers into one shared include
+# directory, where five top-level module maps would collide. Clang finds a
+# module map one directory down when it resolves an import.
+make_slice() {
     local name="$1" platform="$2" dir="$3"
     local lower
     lower="$(echo "$name" | tr '[:upper:]' '[:lower:]')"
-    local framework="$dir/$name.framework"
+    local slice="$dir/$name"
+    local headers="$slice/Headers/$lower"
 
-    rm -rf "$framework"
-    mkdir -p "$framework/Headers" "$framework/Modules"
+    rm -rf "$slice"
+    mkdir -p "$headers"
 
     local inputs=()
     for arch in $(archs_for "$platform"); do
         inputs+=("$BUILD/install/$platform/$arch/lib/$lower.a")
     done
-    lipo -create "${inputs[@]}" -output "$framework/$name"
+    lipo -create "${inputs[@]}" -output "$slice/$lower.a"
 
     local first_arch
     first_arch="$(archs_for "$platform" | awk '{print $1}')"
-    cp "$BUILD/install/$platform/$first_arch/include/$lower/"*.h "$framework/Headers/"
-
-    local bundle_platform min_version
-    case "$platform" in
-        ios) bundle_platform=iPhoneOS; min_version="$IOS_MIN" ;;
-        isimulator) bundle_platform=iPhoneSimulator; min_version="$IOS_MIN" ;;
-        macos) bundle_platform=MacOSX; min_version="$MACOS_MIN" ;;
-    esac
-
-    cat > "$framework/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleDevelopmentRegion</key><string>en</string>
-    <key>CFBundleExecutable</key><string>$name</string>
-    <key>CFBundleIdentifier</key><string>io.neechan.ffmpeg.$name</string>
-    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>CFBundleName</key><string>$name</string>
-    <key>CFBundlePackageType</key><string>FMWK</string>
-    <key>CFBundleShortVersionString</key><string>${FFMPEG_TAG#n}</string>
-    <key>CFBundleVersion</key><string>${FFMPEG_TAG#n}</string>
-    <key>CFBundleSupportedPlatforms</key><array><string>$bundle_platform</string></array>
-    <key>MinimumOSVersion</key><string>$min_version</string>
-</dict>
-</plist>
-PLIST
+    cp "$BUILD/install/$platform/$first_arch/include/$lower/"*.h "$headers/"
 
     # Headers that describe hardware this platform does not have, or that need
     # a header only another operating system ships. They are installed because
     # FFmpeg installs them; including them in the module would fail to compile.
     local excludes=""
-    for header in "$framework/Headers"/*.h; do
+    for header in "$headers"/*.h; do
         case "$(basename "$header")" in
             vdpau.h|qsv.h|dxva2.h|d3d11va.h|xvmc.h|mediacodec.h|jni.h|\
             hwcontext_vdpau.h|hwcontext_vaapi.h|hwcontext_qsv.h|hwcontext_opencl.h|\
@@ -255,8 +238,8 @@ PLIST
         esac
     done
 
-    cat > "$framework/Modules/module.modulemap" <<MODULEMAP
-framework module $name [system] {
+    cat > "$headers/module.modulemap" <<MODULEMAP
+module $name [system] {
     umbrella "."
 $excludes    export *
 }
@@ -275,11 +258,12 @@ log "assembling xcframeworks"
 mkdir -p "$OUT"
 for name in "${LIBRARIES[@]}"; do
     args=()
+    lower="$(echo "$name" | tr '[:upper:]' '[:lower:]')"
     for platform in $SLICES; do
-        dir="$BUILD/frameworks/$platform"
+        dir="$BUILD/libraries/$platform"
         mkdir -p "$dir"
-        make_framework "$name" "$platform" "$dir"
-        args+=(-framework "$dir/$name.framework")
+        make_slice "$name" "$platform" "$dir"
+        args+=(-library "$dir/$name/$lower.a" -headers "$dir/$name/Headers")
     done
     rm -rf "$OUT/$name.xcframework"
     xcodebuild -create-xcframework "${args[@]}" -output "$OUT/$name.xcframework" >/dev/null
@@ -296,16 +280,30 @@ for setting in "CONFIG_GPL 0" "CONFIG_VERSION3 0" "CONFIG_AVDEVICE 0" \
         || { echo "FAIL: expected '$setting' in config.h" >&2; exit 1; }
 done
 
+# Every slice a static library. A framework, even a static one, comes back as
+# an empty stub in the app and as a missing dSYM at App Store validation.
+for name in "${LIBRARIES[@]}"; do
+    lower="$(echo "$name" | tr '[:upper:]' '[:lower:]')"
+    plist="$OUT/$name.xcframework/Info.plist"
+    count="$(plutil -extract AvailableLibraries raw "$plist")"
+    for ((i = 0; i < count; i++)); do
+        path="$(plutil -extract "AvailableLibraries.$i.LibraryPath" raw "$plist")"
+        [[ "$path" == "$lower.a" ]] \
+            || { echo "FAIL: $name.xcframework carries $path, not $lower.a" >&2; exit 1; }
+    done
+done
+
 # Symbols are dumped once per library and then read from the file: piping nm
 # straight into a grep that stops at the first match kills nm with SIGPIPE,
 # which under `set -o pipefail` reads as a failure whether or not it matched.
 first_slice="$(echo "$SLICES" | awk '{print $1}')"
-slice_dir="$BUILD/frameworks/$first_slice"
+slice_dir="$BUILD/libraries/$first_slice"
 symbols="$BUILD/symbols"
 mkdir -p "$symbols"
 for name in Libavcodec Libavformat; do
-    nm -g "$slice_dir/$name.framework/$name" 2>/dev/null > "$symbols/$name.defined" || true
-    nm -u "$slice_dir/$name.framework/$name" 2>/dev/null > "$symbols/$name.undefined" || true
+    lower="$(echo "$name" | tr '[:upper:]' '[:lower:]')"
+    nm -g "$slice_dir/$name/$lower.a" 2>/dev/null > "$symbols/$name.defined" || true
+    nm -u "$slice_dir/$name/$lower.a" 2>/dev/null > "$symbols/$name.undefined" || true
 done
 
 require_symbol() {
