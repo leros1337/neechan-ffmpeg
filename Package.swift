@@ -54,28 +54,28 @@ let package = Package(
         ),
         .binaryTarget(
             name: "Libavcodec",
-            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.3/Libavcodec.xcframework.zip",
-            checksum: "1973d276f5ac9cfcf7e76e6bd8c6f8670c9105e8239fe44e9d733b952caf3e58"
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.4/Libavcodec.xcframework.zip",
+            checksum: "0c9c6f2afbad045a7ff6f94368134171e30fec706842ec624ae46e49a4f9b8a0"
         ),
         .binaryTarget(
             name: "Libavformat",
-            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.3/Libavformat.xcframework.zip",
-            checksum: "6f6fd3febf975c7c9377f44bfbd577c3b14dbb2047d430b05779bd723d96f838"
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.4/Libavformat.xcframework.zip",
+            checksum: "370327fbbc045546bb675658edf13ad65337425920983f6b22dc7d92d4cf9aa1"
         ),
         .binaryTarget(
             name: "Libavutil",
-            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.3/Libavutil.xcframework.zip",
-            checksum: "12c2beeec0c1a2a78ad4f1d2e6bd5c759bc4859c93a54129a6a9907cd7904d0f"
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.4/Libavutil.xcframework.zip",
+            checksum: "233dfc46ed1da7585042c74eb1eefec443a72a10bde2b3f959585b17efd94651"
         ),
         .binaryTarget(
             name: "Libswresample",
-            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.3/Libswresample.xcframework.zip",
-            checksum: "1fda83a90e62cb682e57a454dfb4c1303565bdd34d76d1aeb5c614e54844c0ad"
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.4/Libswresample.xcframework.zip",
+            checksum: "716b4ca1c45b6754e7a94113549a5724cec514bfa9a4865cc64051df50db050b"
         ),
         .binaryTarget(
             name: "Libswscale",
-            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.3/Libswscale.xcframework.zip",
-            checksum: "427da5d594637bdd0c4d24f7f44851a8e5d81f98729ec1141f54862db56eace5"
+            url: "https://github.com/leros1337/neechan-ffmpeg/releases/download/9.0.4/Libswscale.xcframework.zip",
+            checksum: "5f9ec8e9f64b36c0197bb5fbd19d6e016519ed6cbe84258203acbd4e41bbb1a8"
         )
     ]
 )
