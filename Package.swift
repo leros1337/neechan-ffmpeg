@@ -3,12 +3,13 @@ import PackageDescription
 
 // A trimmed, LGPL build of FFmpeg for Apple platforms.
 //
-// Only what an imageboard client meets: Matroska (WebM and MKV) and MP4 in;
-// VP8, VP9, AV1, H.264 and HEVC decoded, with VideoToolbox used wherever the
-// device has a decoder; Vorbis, Opus, AAC, MP3 and the audio a Matroska file
-// tends to hold (FLAC, ALAC, AC-3, DTS, PCM); and H.264 written back through
-// VideoToolbox for the WebM-to-MP4 conversion Photos insists on. No GPL
-// components, no networking, no filters, no external libraries but zlib.
+// Only what an imageboard client meets: Matroska (WebM and MKV), MP4 and AVI
+// in; VP8, VP9, AV1, H.264, HEVC and MPEG-4 Part 2 decoded, with VideoToolbox
+// used wherever the device has a decoder; Vorbis, Opus, AAC, MP3 and the audio
+// a Matroska file tends to hold (FLAC, ALAC, AC-3, DTS, PCM); and H.264
+// written back through VideoToolbox for the WebM-to-MP4 conversion Photos
+// insists on. No GPL components, no networking, no filters, no external
+// libraries but zlib.
 //
 // The xcframeworks are produced by `./build.sh` from FFmpeg's own sources and
 // attached to the release this manifest names. See README.md for the exact

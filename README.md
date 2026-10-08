@@ -20,9 +20,9 @@ is **LGPL-2.1-or-later**.
 
 | | |
 |---|---|
-| Demuxers | Matroska (WebM and MKV), MOV (MP4) |
+| Demuxers | Matroska (WebM and MKV), MOV (MP4), AVI |
 | Muxer | MP4 |
-| Video decoders | VP8, VP9, AV1, H.264, HEVC |
+| Video decoders | VP8, VP9, AV1, H.264, HEVC, MPEG-4 Part 2 |
 | Audio decoders | Vorbis, Opus, AAC, MP3, FLAC, ALAC, AC-3, E-AC-3, DTS, PCM |
 | Encoders | H.264 (through VideoToolbox), AAC, PCM |
 | Hardware | VideoToolbox decode for H.264, HEVC, VP9 and AV1, where the device has the decoder |
@@ -33,6 +33,10 @@ The AV1 decoder is FFmpeg's own, which decodes nothing in software: it is there
 so that a device with an AV1 decoder can use it through VideoToolbox, and a
 device without one is told so cleanly rather than left with a clip that never
 starts. The audio list is what a Matroska file tends to hold outside a WebM.
+
+AVI and MPEG-4 Part 2 are there because a board checks a file's name, not its
+bytes: an XviD rip renamed to `.mp4` is posted, served as an MP4, and has to be
+opened as what it actually is.
 
 Deliberately absent: networking and TLS, every filter, `libavdevice`,
 `libpostproc`, and every external library except zlib. A client that fetches

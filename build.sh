@@ -68,26 +68,30 @@ fi
 # --- what goes in ----------------------------------------------------------
 
 # Containers: the Matroska demuxer reads both .webm and .mkv, and MOV covers
-# MP4. The MP4 muxer is for the converter, which turns a WebM into something
-# Photos will accept.
+# MP4. AVI is there because boards check a file's name rather than its bytes,
+# so an old XviD rip renamed to .mp4 gets posted and then has to be opened as
+# what it is. The MP4 muxer is for the converter, which turns a WebM into
+# something Photos will accept.
 #
 # Codecs: what the boards serve, plus what a Matroska file picked up elsewhere
 # is likely to carry. A .webm is VP8 or VP9 with Vorbis or Opus and nothing
 # else; a .mkv is the same container with anything at all in it, most often
 # H.264, HEVC or AV1 alongside FLAC, AC-3 or DTS. Decoding all of them costs
-# about a megabyte and saves a file that opens to a black screen.
+# about a megabyte and saves a file that opens to a black screen. MPEG-4
+# Part 2 is what an AVI usually holds (XviD, DivX 4 and later), and what an
+# old phone wrote into MP4 and 3GP before H.264.
 #
 # The only encoders are the ones the WebM converter writes with, and H.264 is
 # written by VideoToolbox, so no GPL encoder is involved anywhere.
 COMPONENTS=(
     --disable-everything
-    --enable-demuxer=matroska,mov
+    --enable-demuxer=matroska,mov,avi
     --enable-muxer=mp4
     --enable-protocol=file
-    --enable-decoder=vp8,vp9,av1,h264,hevc
+    --enable-decoder=vp8,vp9,av1,h264,hevc,mpeg4
     --enable-decoder=vorbis,opus,aac,aac_latm,mp3,mp3float,flac,alac,ac3,eac3,dca
     --enable-decoder=pcm_s16le,pcm_s16be,pcm_s24le,pcm_f32le
-    --enable-parser=vp8,vp9,av1,h264,hevc,opus,vorbis,aac,aac_latm,mpegaudio,flac,ac3,dca
+    --enable-parser=vp8,vp9,av1,h264,hevc,mpeg4video,opus,vorbis,aac,aac_latm,mpegaudio,flac,ac3,dca
     --enable-bsf=h264_mp4toannexb,hevc_mp4toannexb,extract_extradata,vp9_superframe,vp9_superframe_split
     --enable-encoder=h264_videotoolbox,aac,pcm_s16le
     --enable-hwaccel=h264_videotoolbox,hevc_videotoolbox,vp9_videotoolbox,av1_videotoolbox
@@ -314,11 +318,12 @@ require_symbol() {
 for symbol in ff_h264_videotoolbox_encoder ff_aac_encoder ff_h264_videotoolbox_hwaccel \
               ff_hevc_videotoolbox_hwaccel ff_vp9_videotoolbox_hwaccel ff_av1_videotoolbox_hwaccel \
               ff_vp8_decoder ff_vp9_decoder ff_av1_decoder ff_h264_decoder ff_hevc_decoder \
+              ff_mpeg4_decoder \
               ff_opus_decoder ff_vorbis_decoder ff_mp3float_decoder ff_aac_decoder \
               ff_flac_decoder ff_alac_decoder ff_ac3_decoder ff_eac3_decoder ff_dca_decoder; do
     require_symbol Libavcodec "$symbol"
 done
-for symbol in ff_matroska_demuxer ff_mov_demuxer ff_mp4_muxer; do
+for symbol in ff_matroska_demuxer ff_mov_demuxer ff_avi_demuxer ff_mp4_muxer; do
     require_symbol Libavformat "$symbol"
 done
 
